@@ -1,14 +1,14 @@
 config = {
-    'exp_name': '【0001】FULL DATASET TRAIN',
+    'exp_name': '【0009】FULL DATASET TRAIN',
     'epoch': 100,
     'lr': 1.0,
     'mode': 'stroke',
     'batch': 64,
     'val_frequency': 2000,
     'test_only': False,
-    'resume': '',                      # KOSONG - karena training dari awal
-    'train_dataset': './data/mydata/train_1000',
-    'test_dataset': './data/mydata/test_1000',
+    'resume': '',
+    'train_dataset': '/kaggle/input/datasets/nancyjwn/hanzidataset/HanziTrainmdb/HanziTrainmdb',
+    'test_dataset': '/kaggle/input/datasets/nancyjwn/hanzidataset/HanziTestmdb/HanziTestmdb',
     'weight_decay': False,
     'schedule_frequency': 5000,
     'image_size': 32,
