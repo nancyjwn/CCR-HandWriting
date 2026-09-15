@@ -1,16 +1,16 @@
 config = {
-    'exp_name': '【0009】FULL DATASET TRAIN',
-    'epoch': 100,
-    'lr': 1.0,
+    'exp_name': '【0001】FULL DATASET TRAIN',
+    'epoch': 30,                    # cukup untuk konvergensi awal di data sebesar ini, realistis dari segi waktu
+    'lr': 1.0,                      # default asli Fudan, dirancang untuk skala data besar
     'mode': 'stroke',
-    'batch': 64,
-    'val_frequency': 2000,
+    'batch': 64,                    # dinaikkan dari default 32, mempercepat training di data besar
+    'val_frequency': 3000,          # ~6250 iterasi/epoch, validasi ~2x per epoch
     'test_only': False,
-    'resume': '',
-    'train_dataset': '/kaggle/input/datasets/nancyjwn/hanzidataset/HanziTrainmdb/HanziTrainmdb',
-    'test_dataset': '/kaggle/input/datasets/nancyjwn/hanzidataset/HanziTestmdb/HanziTestmdb',
+    'resume': '',                   # kosong untuk training dari awal
+    'train_dataset': './data/HanziTrainmdb/HanziTrainmdb',
+    'test_dataset': './data/HanziTestmdb/HanziTestmdb',
     'weight_decay': False,
-    'schedule_frequency': 5000,
+    'schedule_frequency': 5000,     # aktifkan LR decay bertahap, penting untuk training jangka panjang
     'image_size': 32,
     'alphabet': 3755,
 }

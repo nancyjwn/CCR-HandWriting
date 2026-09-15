@@ -145,11 +145,16 @@ def must_in_screen():
 
 
 def saver():
-    try:
-        shutil.rmtree('./history/{}'.format(config['exp_name']))
-    except:
-        pass
-    os.mkdir('./history/{}'.format(config['exp_name']))
+    if config['resume'] == '':
+        # training dari NOL - hapus folder lama seperti biasa
+        try:
+            shutil.rmtree('./history/{}'.format(config['exp_name']))
+        except:
+            pass
+        os.mkdir('./history/{}'.format(config['exp_name']))
+    else:
+        # sedang RESUME - jangan hapus, cukup pastikan foldernya ada
+        os.makedirs('./history/{}'.format(config['exp_name']), exist_ok=True)
 
     import time
 
