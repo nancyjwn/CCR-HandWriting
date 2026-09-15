@@ -7,8 +7,8 @@ config = {
     'val_frequency': 3000,          # ~6250 iterasi/epoch, validasi ~2x per epoch
     'test_only': False,
     'resume': '',                   # kosong untuk training dari awal
-    'train_dataset': './data/HanziTrainmdb/HanziTrainmdb',
-    'test_dataset': './data/HanziTestmdb/HanziTestmdb',
+    'train_dataset': './data/Trainmdb/Trainmdb',
+    'test_dataset': './data/Testmdb/Testmdb',
     'weight_decay': False,
     'schedule_frequency': 5000,     # aktifkan LR decay bertahap, penting untuk training jangka panjang
     'image_size': 32,
