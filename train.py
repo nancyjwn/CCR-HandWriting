@@ -3,6 +3,7 @@ import sys
 import time
 import torch
 import datetime
+import itertools
 import torch.nn as nn
 from config import config
 import torch.optim as optim
@@ -23,13 +24,35 @@ must_in_screen()
 alphabet = get_alphabet(mode)
 print('Alphabet : {}'.format(alphabet))
 
+######### Batas waktu training
+MAX_TRAINING_SECONDS = 10 * 60 * 60  # 10 jam
+training_start_time = time.time()
+
 ######### Model
 model = Transformer(mode).cuda()
 model = nn.DataParallel(model)
 
-######### Load pretrain
+######### Load pretrain + resume position (epoch & iterasi)
+start_epoch = 0
+start_iter = 0
+BASE_SEED = 12345  # JANGAN diubah antar sesi resume
+
 if config['resume'].strip() != '':
     model.load_state_dict(torch.load(config['resume']))
+
+    epoch_file = './history/{}/last_epoch.txt'.format(config['exp_name'])
+    if os.path.exists(epoch_file):
+        with open(epoch_file, 'r') as f:
+            start_epoch = int(f.read().strip())
+        print('Melanjutkan dari epoch: {}'.format(start_epoch))
+
+    iter_file = './history/{}/last_iter.txt'.format(config['exp_name'])
+    if os.path.exists(iter_file):
+        with open(iter_file, 'r') as f:
+            saved_iter = int(f.read().strip())
+        if saved_iter >= 0:
+            start_iter = saved_iter + 1
+            print('Melanjutkan dari iterasi: {}'.format(start_iter))
 
 ######### Optimizer
 if config['weight_decay']:
@@ -60,6 +83,16 @@ confusing_dict = None
 gallery_combine = None
 
 
+def save_checkpoint_now(epoch, iteration):
+    """Simpan checkpoint darurat (dipakai saat batas waktu tercapai)."""
+    torch.save(model.state_dict(), './history/{}/model.pth'.format(config['exp_name']))
+    with open('./history/{}/last_epoch.txt'.format(config['exp_name']), 'w') as f:
+        f.write(str(epoch))
+    with open('./history/{}/last_iter.txt'.format(config['exp_name']), 'w') as f:
+        f.write(str(iteration))
+    print('Checkpoint darurat tersimpan di epoch {}, iterasi {}.'.format(epoch, iteration))
+
+
 def train(epoch, iteration, image, length, text_input, text_gt, character_level_label):
     global times
     global confusing_dict
@@ -68,7 +101,6 @@ def train(epoch, iteration, image, length, text_input, text_gt, character_level_
     optimizer.zero_grad()
     result = model(image, length, text_input)
     text_pred = result['pred']
-    # conv_feature = result['conv']
     loss = criterion(text_pred, text_gt)
     loss.backward()
     optimizer.step()
@@ -96,7 +128,6 @@ def test(epoch):
     clean_cache = False
 
     for iteration in range(test_loader_len):
-        # data = dataloader.next()
         data = next(dataloader)
         image, label = data
         image = torch.nn.functional.interpolate(image, size=(config['image_size'], config['image_size']))
@@ -181,27 +212,61 @@ if __name__ == '__main__':
     if config['test_only']:
         test(-1)
 
-    for epoch in range(config['epoch']):
+    stop_training = False
+
+    for epoch in range(start_epoch, config['epoch']):
+        if stop_training:
+            break
+
         torch.save(model.state_dict(), './history/{}/model.pth'.format(config['exp_name']))
+        with open('./history/{}/last_epoch.txt'.format(config['exp_name']), 'w') as f:
+            f.write(str(epoch))
+
+        torch.manual_seed(BASE_SEED + epoch)
 
         dataloader = iter(train_loader)
         train_loader_len = len(train_loader)
-        for iteration in range(train_loader_len):
-            # data = dataloader.next()
+
+        skip_n = start_iter if epoch == start_epoch else 0
+        if skip_n > 0:
+            print('Melewati {} iterasi yang sudah diproses sebelumnya...'.format(skip_n))
+            for _ in range(skip_n):
+                next(dataloader)
+
+        for iteration in range(skip_n, train_loader_len):
+            # cek batas waktu SEBELUM proses iterasi
+            elapsed = time.time() - training_start_time
+            if elapsed >= MAX_TRAINING_SECONDS:
+                print('Batas 10 jam tercapai. Menyimpan checkpoint dan menghentikan training dengan aman...')
+                prev_iter = iteration - 1 if iteration > 0 else -1
+                save_checkpoint_now(epoch, prev_iter)
+                stop_training = True
+                break
+
             data = next(dataloader)
             image, label = data
             image = torch.nn.functional.interpolate(image, size=(config['image_size'], config['image_size']))
             length, text_input, text_gt, character_level_label = converter(mode, label)
             train(epoch, iteration, image, length, text_input, text_gt, character_level_label)
 
+            with open('./history/{}/last_iter.txt'.format(config['exp_name']), 'w') as f:
+                f.write(str(iteration))
+
             if (iteration + 1) % config['val_frequency'] == 0:
                 torch.cuda.empty_cache()
                 test(epoch)
 
-        # if (epoch + 1) % config['val_frequency'] == 0:
-        #     torch.cuda.empty_cache()
-        #     test(epoch + 1)
+        if stop_training:
+            break
+
+        with open('./history/{}/last_iter.txt'.format(config['exp_name']), 'w') as f:
+            f.write('-1')
 
         if (epoch + 1) % config['schedule_frequency'] == 0:
             for p in optimizer.param_groups:
                 p['lr'] *= 0.1
+
+    if stop_training:
+        print('Training dihentikan otomatis setelah 10 jam. Jalankan ulang besok dengan resume untuk melanjutkan.')
+    else:
+        print('Training selesai penuh sampai epoch {}.'.format(config['epoch']))
