@@ -25,7 +25,8 @@ alphabet = get_alphabet(mode)
 print('Alphabet : {}'.format(alphabet))
 
 ######### Batas waktu training
-MAX_TRAINING_SECONDS = 10 * 60 * 60  # 10 jam
+MAX_TRAINING_SECONDS = 10 * 60 * 60   # 10 jam
+TEST_BUFFER_SECONDS = 2 * 60 * 60     # sisakan 2 jam buat evaluasi test set (300rb+ data) - naikkan kalau test() ternyata lebih lama dari ini
 training_start_time = time.time()
 
 ######### Model
@@ -234,7 +235,7 @@ if __name__ == '__main__':
                 next(dataloader)
 
         for iteration in range(skip_n, train_loader_len):
-            # cek batas waktu SEBELUM proses iterasi
+            # cek batas waktu SEBELUM proses iterasi training
             elapsed = time.time() - training_start_time
             if elapsed >= MAX_TRAINING_SECONDS:
                 print('Batas 10 jam tercapai. Menyimpan checkpoint dan menghentikan training dengan aman...')
@@ -253,8 +254,19 @@ if __name__ == '__main__':
                 f.write(str(iteration))
 
             if (iteration + 1) % config['val_frequency'] == 0:
-                torch.cuda.empty_cache()
-                test(epoch)
+                # cek batas waktu SEBELUM masuk test() - test() bisa makan waktu lama karena data test besar
+                elapsed_now = time.time() - training_start_time
+                remaining = MAX_TRAINING_SECONDS - elapsed_now
+
+                if remaining < TEST_BUFFER_SECONDS:
+                    print('Sisa waktu tidak cukup untuk evaluasi penuh ({:.0f} menit tersisa). '
+                          'Melewati evaluasi, menyimpan checkpoint, dan berhenti...'.format(remaining / 60))
+                    save_checkpoint_now(epoch, iteration)
+                    stop_training = True
+                    break
+                else:
+                    torch.cuda.empty_cache()
+                    test(epoch)
 
         if stop_training:
             break
@@ -267,6 +279,6 @@ if __name__ == '__main__':
                 p['lr'] *= 0.1
 
     if stop_training:
-        print('Training dihentikan otomatis setelah 10 jam. Jalankan ulang besok dengan resume untuk melanjutkan.')
+        print('Training dihentikan otomatis. Jalankan ulang besok dengan resume untuk melanjutkan.')
     else:
         print('Training selesai penuh sampai epoch {}.'.format(config['epoch']))
