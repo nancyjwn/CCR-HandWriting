@@ -1,5 +1,5 @@
 config = {
-    'exp_name': '【0001】FULL DATASET TRAIN',
+    'exp_name': '【0001】FULLDATASET TRAIN',
     'epoch': 30,
     'lr': 1.0,
     'mode': 'stroke',
