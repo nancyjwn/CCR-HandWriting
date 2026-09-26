@@ -6,7 +6,7 @@ config = {
     'batch': 64,
     'val_frequency': 3000,
     'test_only': False,
-    'resume': './history/【0001】FULL DATASET TRAIN/best_model.pth',
+    'resume': '',
     'train_dataset': '/kaggle/input/datasets/nancyjiwono/dbhandwriting/Trainmdb/Trainmdb',
     'test_dataset': '/kaggle/input/datasets/nancyjiwono/dbhandwriting/Testmdb/Testmdb',
     'weight_decay': False,
