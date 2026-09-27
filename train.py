@@ -516,7 +516,7 @@ def test(epoch):
 
     result_file = open(
         '{}/accuracy_record.txt'.format(history_path),
-        'w+',
+        'a+',
         encoding='utf-8'
     )
 
