@@ -1192,6 +1192,36 @@ if __name__ == '__main__':
         # EPOCH SELESAI
         # =================================================
 
+        # Simpan model terakhir setelah epoch selesai
+        torch.save(
+            model.state_dict(),
+            './history/{}/model.pth'.format(
+                config['exp_name']
+            )
+        )
+
+        # -------------------------------------------------
+        # Tandai bahwa epoch ini sudah selesai
+        # dan epoch berikutnya adalah epoch + 1
+        # -------------------------------------------------
+
+        with open(
+            './history/{}/last_epoch.txt'.format(
+                config['exp_name']
+            ),
+            'w'
+        ) as f:
+
+            f.write(
+                str(epoch + 1)
+            )
+
+        # -------------------------------------------------
+        # -1 berarti epoch sudah selesai
+        # sehingga ketika dilanjutkan, mulai dari
+        # epoch yang tersimpan di last_epoch.txt
+        # -------------------------------------------------
+
         with open(
             './history/{}/last_iter.txt'.format(
                 config['exp_name']
@@ -1203,14 +1233,12 @@ if __name__ == '__main__':
                 '-1'
             )
 
-
         # -------------------------------------------------
         # Reset start_iter supaya epoch berikutnya
-        # mulai dari 0
+        # mulai dari iterasi 0
         # -------------------------------------------------
 
         start_iter = 0
-
 
         # =================================================
         # LEARNING RATE SCHEDULE
