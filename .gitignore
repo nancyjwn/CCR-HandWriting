@@ -1,0 +1,14 @@
+﻿.venvinference/
+.venvzsl/
+venv/
+.env
+*.env
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+data/
+model/
+
+history/
+
